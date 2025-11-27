@@ -1,0 +1,188 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Appointment System — Firebase</title>
+
+  <!-- Lottie -->
+  <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
+
+  <!-- FIREBASE COMPAT SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-analytics-compat.js"></script>
+
+  <!-- FIREBASE INIT (CORRECTED TAG) -->
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyApzn0_qb8H4oX7zKr7oMGkHwRT5MViqAQ",
+      authDomain: "mainaya.firebaseapp.com",
+      projectId: "mainaya",
+      storageBucket: "mainaya.firebasestorage.app",
+      messagingSenderId: "503091733358",
+      appId: "1:503091733358:web:b372dc7ff1769d4797577f",
+      measurementId: "G-K3NJQ1CG57"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    try { firebase.analytics(); } catch(e){}
+  </script>
+
+  <link rel="stylesheet" href="style.css" />
+  <script src="script.js" defer></script>
+</head>
+
+<body>
+
+  <!-- REGISTER PAGE -->
+  <div class="page" id="registerPage">
+    <div class="center-card glass-card">
+      <h2 class="card-title">Create Account</h2>
+
+      <select id="regRole" onchange="toggleRegisterForm()">
+        <option value="student">Student</option>
+        <option value="coordinator">Coordinator</option>
+      </select>
+
+      <div id="studentFields" class="fields">
+        <input id="stuName" type="text" placeholder="Student Name">
+        <input id="stuEmail" type="email" placeholder="College Email (used for login)">
+        <input id="stuDept" type="text" placeholder="Department">
+        <input id="stuBranch" type="text" placeholder="Branch">
+        <input id="stuYear" type="text" placeholder="Year">
+        <input id="stuUserId" type="text" placeholder="College ID (e.g. rollno)">
+      </div>
+
+      <div id="coordFields" class="fields" style="display:none;">
+        <input id="coName" type="text" placeholder="Coordinator Name">
+        <input id="coEmail" type="email" placeholder="Coordinator Email (used for login)">
+        <input id="coDept" type="text" placeholder="Department">
+        <input id="coUserId" type="text" placeholder="Coordinator ID">
+      </div>
+
+      <input id="regPass" type="password" placeholder="Password">
+      <button class="btn primary full-btn" onclick="register()">Register</button>
+
+      <p class="switch">Already have an account?
+        <b onclick="showLogin()" style="cursor:pointer">Login</b>
+      </p>
+    </div>
+  </div>
+
+  <!-- LOGIN PAGE -->
+  <div class="page" id="loginPage" style="display:none;">
+    <div class="center-card glass-card">
+      <h2 class="card-title">Login</h2>
+
+      <input id="loginEmail" type="email" placeholder="Email used at registration">
+      <input id="loginPass" type="password" placeholder="Password">
+
+      <button class="btn primary full-btn" onclick="login()">Login</button>
+
+      <p class="switch">Don't have an account?
+        <b onclick="showRegister()" style="cursor:pointer">Register</b>
+      </p>
+    </div>
+  </div>
+
+  <!-- STUDENT DASHBOARD -->
+  <div class="page dashboard glass-card" id="studentDashboard" style="display:none;">
+    <div class="dash-header">
+      <h2>Student Dashboard</h2>
+      <button class="btn small" onclick="logout()">Logout</button>
+    </div>
+
+    <div class="dash-body">
+      <aside class="sidebar glass-card">
+        <h3>Your Profile</h3>
+        <p id="s_name"></p>
+        <p id="s_email"></p>
+        <p id="s_dept"></p>
+        <p id="s_branch"></p>
+        <p id="s_year"></p>
+      </aside>
+
+      <main class="content">
+
+        <section class="glass-card">
+          <h3>Book Appointment</h3>
+          <input id="purpose" type="text" placeholder="Purpose">
+          <select id="faculty"></select>
+          <input id="date" type="date">
+          <input id="time" type="time">
+          <button class="btn primary full-btn" onclick="submitAppointment()">Submit</button>
+        </section>
+
+        <section class="glass-card">
+          <h3>Your Appointment Status</h3>
+          <div id="studentMsg" class="scroll-box"></div>
+        </section>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- COORDINATOR DASHBOARD -->
+  <div class="page dashboard glass-card" id="coordinatorDashboard" style="display:none;">
+    <div class="dash-header">
+      <h2>Coordinator Dashboard</h2>
+      <button class="btn small" onclick="logout()">Logout</button>
+    </div>
+
+    <main class="content">
+      <section class="glass-card">
+        <h3>Appointments Assigned To You</h3>
+        <div id="requestList" class="scroll-box"></div>
+      </section>
+    </main>
+  </div>
+
+  <!-- DETAILS POPUP -->
+  <div id="detailsPopup" class="overlay">
+    <div class="popup-box glass-card">
+      <h2>Student Details</h2>
+      <p id="d_name"></p>
+      <p id="d_email"></p>
+      <p id="d_dept"></p>
+      <p id="d_branch"></p>
+      <p id="d_year"></p>
+      <p id="d_purpose"></p>
+      <p id="d_date_time"></p>
+
+      <div class="popup-buttons">
+        <button class="btn primary" onclick="approveRequest()">Approve</button>
+        <button class="btn red" onclick="openRejectPopup()">Reject</button>
+        <button class="btn cancel" onclick="closeDetailsPopup()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REJECT POPUP -->
+  <div id="rejectPopup" class="overlay">
+    <div class="popup-box glass-card">
+      <h2>Suggest New Date & Time</h2>
+      <input id="suggestDate" type="date">
+      <input id="suggestTime" type="time">
+      <div class="popup-buttons">
+        <button class="btn primary" onclick="submitSuggestion()">Submit</button>
+        <button class="btn cancel" onclick="closeRejectPopup()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUCCESS POPUP -->
+  <div id="successPopup" class="overlay">
+    <div class="popup-box glass-card" style="text-align:center;">
+      <lottie-player id="successLottie"
+        src="https://assets4.lottiefiles.com/packages/lf20_qp1q7mct.json"
+        background="transparent" speed="1"
+        style="width:140px;height:140px" loop>
+      </lottie-player>
+      <h3 id="successText">Success</h3>
+    </div>
+  </div>
+
+</body>
+</html>
