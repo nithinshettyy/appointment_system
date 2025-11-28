@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Appointment System</title>
+  <title>Appointment System — Firebase</title>
 
   <!-- Lottie -->
   <script src="https://unpkg.com/@lottiefiles/lottie-player@latest/dist/lottie-player.js"></script>
@@ -48,16 +48,16 @@
 
       <div id="studentFields" class="fields">
         <input id="stuName" type="text" placeholder="Student Name">
-        <input id="stuEmail" type="email" placeholder="College Email (used for login)">
+        <input id="stuEmail" type="email" placeholder="College Email">
         <input id="stuDept" type="text" placeholder="Department">
         <input id="stuBranch" type="text" placeholder="Branch">
         <input id="stuYear" type="text" placeholder="Year">
-        <input id="stuUserId" type="text" placeholder="College ID (e.g. rollno)">
+        <input id="stuUSN" type="text" placeholder="USN No.">
       </div>
 
       <div id="coordFields" class="fields" style="display:none;">
         <input id="coName" type="text" placeholder="Coordinator Name">
-        <input id="coEmail" type="email" placeholder="Coordinator Email (used for login)">
+        <input id="coEmail" type="email" placeholder="Coordinator Email">
         <input id="coDept" type="text" placeholder="Department">
         <input id="coUserId" type="text" placeholder="Coordinator ID">
       </div>
@@ -102,6 +102,7 @@
         <p id="s_dept"></p>
         <p id="s_branch"></p>
         <p id="s_year"></p>
+        <p id="s_usn"></p>
       </aside>
 
       <main class="content">
@@ -144,6 +145,7 @@
     <div class="popup-box glass-card">
       <h2>Student Details</h2>
       <p id="d_name"></p>
+      <p id="d_usn"></p>
       <p id="d_email"></p>
       <p id="d_dept"></p>
       <p id="d_branch"></p>
@@ -186,4 +188,3 @@
 
 </body>
 </html>
-
