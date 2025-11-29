@@ -1,8 +1,5 @@
 /* ===== Base ===== */
-/* Sets global sizing for all elements */
 * { box-sizing: border-box; }
-
-/* Main body styling: gradient background, center alignment */
 body {
   margin: 0;
   font-family: 'Poppins', sans-serif;
@@ -14,15 +11,9 @@ body {
   padding: 12px;
 }
 
-/* All pages hidden by default */
-.page { 
-  display: none; 
-  width: 100%; 
-  max-width: 1100px; 
-}
+.page { display: none; width: 100%; max-width: 1100px; }
 
 /* ===== GLASS CARD ===== */
-/* Reusable glass effect card used across UI */
 .glass-card {
   background: rgba(255, 255, 255, 0.12);
   border: 1px solid rgba(255,255,255,0.25);
@@ -33,21 +24,10 @@ body {
   padding: 18px;
 }
 
-/* Centered card for login/register screens */
-.center-card { 
-  width: 100%; 
-  max-width:480px; 
-  margin: 10px auto; 
-  text-align: center; 
-}
+/* centered small card for login/register */
+.center-card { width: 100%; max-width:480px; margin: 10px auto; text-align: center; }
+.card-title { color: #fff; font-size: 22px; margin-bottom: 12px; }
 
-.card-title { 
-  color: #fff; 
-  font-size: 22px; 
-  margin-bottom: 12px; 
-}
-
-/* Input field general styling */
 input, select {
   width: 100%;
   padding: 12px;
@@ -59,146 +39,40 @@ input, select {
   border: 1px solid #ddd !important;
 }
 
-/* Button styling */
-.btn { 
-  border: none; 
-  border-radius: 10px; 
-  padding: 10px 14px; 
-  cursor: pointer; 
-  font-weight: 600; 
-}
+.btn { border: none; border-radius: 10px; padding: 10px 14px; cursor: pointer; font-weight: 600; }
+.primary { background: #e84b1b; color:white; }
+.small { padding: 8px 12px; background:#e84e1b; color:white; }
+.red { background: #855343; color:white; }
+.cancel { background:#333; color:white; }
 
-/* Primary button (orange) */
-.primary { 
-  background: #e84b1b; 
-  color:white; 
-}
+.dashboard { display:flex; flex-direction:column; gap:12px; width:100%; }
+.dash-header { display:flex; justify-content:space-between; align-items:center; color:rgb(23, 10, 10); }
+.dash-body { display:flex; gap:16px; flex-wrap:wrap; }
+.sidebar { width: 320px; min-width:220px; color:white; }
+.content { flex:1; min-width:280px; display:flex; flex-direction:column; gap:12px; }
+.scroll-box { max-height:300px; overflow:auto; background: rgba(255,255,255,0.06); padding:12px; border-radius:12px; border:1px solid rgba(255,255,255,0.2); }
+.request-card { background: rgba(255,255,255,0.18); padding: 12px; border-radius:12px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center; border:1px solid rgba(255,255,255,0.25); }
 
-/* Small-sized button */
-.small { 
-  padding: 8px 12px; 
-  background:#e84e1b; 
-  color:white; 
-}
-
-/* Red button used for rejection */
-.red { 
-  background: #855343; 
-  color:white; 
-}
-
-/* Cancel button (gray) */
-.cancel { 
-  background:#333; 
-  color:white; 
-}
-
-/* Dashboard layout */
-.dashboard { 
-  display:flex; 
-  flex-direction:column; 
-  gap:12px; 
-  width:100%; 
-}
-
-.dash-header { 
-  display:flex; 
-  justify-content:space-between; 
-  align-items:center; 
-  color:rgb(23, 10, 10); 
-}
-
-/* Flex layout for profile + content */
-.dash-body { 
-  display:flex; 
-  gap:16px; 
-  flex-wrap:wrap; 
-}
-
-/* Sidebar for student and coordinator profile */
-.sidebar { 
-  width: 320px; 
-  min-width:220px; 
-  color:white; 
-}
-
-/* Main content area */
-.content { 
-  flex:1; 
-  min-width:280px; 
-  display:flex; 
-  flex-direction:column; 
-  gap:12px; 
-}
-
-/* Scrollable container for long lists */
-.scroll-box { 
-  max-height:200px; 
-  overflow:auto; 
-  background: rgba(255,255,255,0.06); 
-  padding:12px; 
-  border-radius:12px; 
-  border:1px solid rgba(255,255,255,0.2); 
-}
-
-/* Appointment card styling */
-.request-card { 
-  background: rgba(255,255,255,0.18); 
-  padding: 12px; 
-  border-radius:12px; 
-  margin-bottom:12px; 
-  display:flex; 
-  justify-content:space-between; 
-  align-items:center; 
-  border:1px solid rgba(255,255,255,0.25); 
-}
-
-/* Status badge styles */
-.badge { 
-  padding:6px 12px; 
-  border-radius:20px; 
-  font-weight:700; 
-  font-size:13px; 
-}
+.badge { padding:6px 12px; border-radius:20px; font-weight:700; font-size:13px; }
 .badge.approved { background:#b6f0c6; color:#0a4d1a; }
 .badge.pending { background:#ffe9a3; color:#4a3900; }
 .badge.rejected { background:#ffb8b8; color:#5a0000; }
 .badge.withdrawn { background:#c7c7c7; color:#1e1e1e; }
 
-/* Popup overlay for modals */
-.overlay { 
-  position:fixed; 
-  inset:0; 
-  display:none; 
-  justify-content:center; 
-  align-items:center; 
-  background:rgba(0,0,0,0.55); 
-  z-index:50; 
-}
+.overlay { position:fixed; inset:0; display:none; justify-content:center; align-items:center; background:rgba(0,0,0,0.55); z-index:50; }
+.popup-box { width:340px; padding:18px; }
 
-.popup-box { 
-  width:340px; 
-  padding:18px; 
-}
-
-/* Fade-in animation for all components */
 @keyframes fadeIn {
   from { opacity: 0; transform: translateY(10px); }
   to { opacity: 1; transform: translateY(0); }
 }
+.page, .glass-card { animation: fadeIn 0.45s ease; }
 
-.page, .glass-card { 
-  animation: fadeIn 0.45s ease; 
-}
-
-/* Responsive layout for small screens */
 @media (max-width:880px){
   .dash-body { flex-direction:column; }
   .sidebar{ width:100%; }
   .content{ width:100%; }
 }
-
-/* Fixed logo at bottom right */
 .footer-logo {
   position: fixed;
   bottom: 35px;
@@ -214,22 +88,16 @@ input, select {
   border-radius: 10px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.25);
 }
-
-/* Coordinator profile box styling */
 .co-profile-box {
   margin-top: 10px;
   color: white;
 }
-
-/* Stats container layout */
 .stats-container {
   display: flex;
   gap: 12px;
   margin: 15px 0;
   flex-wrap: wrap;
 }
-
-/* Individual stat box */
 .stat-box {
   flex: 1;
   min-width: 160px;
@@ -241,37 +109,31 @@ input, select {
   text-align: center;
   border: 1px solid rgba(255,255,255,0.3);
 }
-
-/* Colored left strip based on status */
 .stat-box.pending { border-left: 6px solid #FFE066; }
 .stat-box.approved { border-left: 6px solid #4CAF50; }
 .stat-box.rejected { border-left: 6px solid #F44336; }
 
-/* Search & Filter Row */
 .search-filter {
   display: flex;
   gap: 12px;
   margin-bottom: 15px;
 }
-
-/* Input styling for search bar + dropdown */
 #searchInput, #statusFilter {
   padding: 10px;
   border-radius: 10px;
   border: none;
 }
+
 /* credit popup */
 #creditPopup .popup-box p {
   font-size: 18px;
   color: white;
   margin: 6px 0;
 }
-
 #creditPopup h2 {
   color: #fff;
   margin-bottom: 10px;
 }
-
 #creditPopup button {
   margin-top: 12px;
 }
