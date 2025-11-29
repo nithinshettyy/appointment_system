@@ -201,6 +201,8 @@ function loadStudentDetails(){
   document.getElementById('s_branch').innerText = "Branch: " + (currentUserProfile.branch || "");
   document.getElementById('s_year').innerText = "Year: " + (currentUserProfile.year || "");
   document.getElementById('s_usn').innerText = "USN: " + (currentUserProfile.userId || "");
+  document.getElementById('s_usn').innerText = "USN: " + (currentUserProfile.userId || "");
+
   const today = new Date().toISOString().split("T")[0];
   document.getElementById('date').setAttribute("min", today);
 }
@@ -481,5 +483,6 @@ showLogin();
 document.querySelectorAll('.overlay').forEach(o=>{
   o.addEventListener('click', (e)=>{ if(e.target===o){ o.style.display='none'; }});
 });
+
 
 
