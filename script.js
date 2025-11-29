@@ -373,6 +373,7 @@ async function openDetails(docId){
   const stu = stuDoc && stuDoc.exists ? stuDoc.data() : {};
 
   d_name.innerText = "Name: " + (stu.name || req.studentName || req.studentId || '');
+  d_usn.innerText = "USN: " + (stu.userId || req.studentId || "");
   d_email.innerText = "Email: " + (stu.email || '');
   d_dept.innerText = "Dept: " + (stu.dept || '');
   d_branch.innerText = "Branch: " + (stu.branch || '');
@@ -483,6 +484,7 @@ showLogin();
 document.querySelectorAll('.overlay').forEach(o=>{
   o.addEventListener('click', (e)=>{ if(e.target===o){ o.style.display='none'; }});
 });
+
 
 
 
