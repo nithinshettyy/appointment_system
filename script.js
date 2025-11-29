@@ -1,5 +1,6 @@
 // ============================================================
-// script.js (FULL UPDATED – Coordinator Sorting/Search FIXED)
+// script.js (FINAL UPDATED – Coordinator Sorting/Search FIXED +
+// Coordinator Dropdown FIXED + USN Working)
 // ============================================================
 
 console.log("script.js loaded");
@@ -12,10 +13,10 @@ const db = firebase.firestore();
 let currentUserProfile = null;
 let selectedRequestDocId = null;
 
-// Coordinator Cache (Used for search/filter)
+// Cache for Coordinator Filter/Sorting
 let coordinatorCache = [];
 
-// DOM
+// DOM references
 const registerPage = document.getElementById('registerPage');
 const loginPage = document.getElementById('loginPage');
 const studentDashboard = document.getElementById('studentDashboard');
@@ -31,7 +32,7 @@ const successText = document.getElementById('successText');
 const detailsPopup = document.getElementById('detailsPopup');
 const rejectPopup = document.getElementById('rejectPopup');
 
-// Details Popup DOM
+// Student Details Popup
 const d_name = document.getElementById('d_name');
 const d_usn = document.getElementById('d_usn');
 const d_email = document.getElementById('d_email');
@@ -41,7 +42,7 @@ const d_year = document.getElementById('d_year');
 const d_purpose = document.getElementById('d_purpose');
 const d_date_time = document.getElementById('d_date_time');
 
-// Hide pages
+// Hide all pages
 function hideAllPages() {
   document.querySelectorAll(".page").forEach(p => p.style.display = "none");
   document.querySelectorAll(".overlay").forEach(o => o.style.display = "none");
@@ -87,7 +88,7 @@ async function register() {
     }
 
     await db.collection('users').doc(uid).set(profile);
-    alert("Registered! Please Login.");
+    alert("Registered Successfully!");
     showLogin();
 
   } catch (err) {
@@ -116,12 +117,13 @@ function logout() {
 /* ------------------ AUTH STATE ------------------ */
 let studentListenerUnsub = null;
 let coordinatorListenerUnsub = null;
-let coordinatorsListenerUnsub = null;
+let coordinatorsDropdownUnsub = null;
 
 auth.onAuthStateChanged(async (user) => {
 
   if (studentListenerUnsub) studentListenerUnsub();
   if (coordinatorListenerUnsub) coordinatorListenerUnsub();
+  if (coordinatorsDropdownUnsub) coordinatorsDropdownUnsub();
 
   if (!user) {
     hideAllPages();
@@ -137,17 +139,26 @@ auth.onAuthStateChanged(async (user) => {
 
   currentUserProfile = doc.data();
 
+  /* ------------------ STUDENT USER ------------------ */
   if (currentUserProfile.role === "student") {
 
     showStudentDashboard();
     loadStudentDetails();
+
+    // ⭐ FIX: Load Coordinator Dropdown
+    coordinatorsDropdownUnsub = db.collection('users')
+      .where('role', '==', 'coordinator')
+      .onSnapshot(snap => renderCoordinators(snap));
 
     studentListenerUnsub = db.collection('appointments')
       .where('studentUid', '==', user.uid)
       .orderBy('createdAt', 'desc')
       .onSnapshot(snap => renderStudentAppointments(snap));
 
-  } else {
+  }
+
+  /* ------------------ COORDINATOR USER ------------------ */
+  else {
 
     showCoordinatorDashboard();
     loadCoordinatorProfile();
@@ -179,12 +190,26 @@ function loadStudentDetails() {
   document.getElementById('s_usn').innerText = "USN: " + currentUserProfile.userId;
 }
 
+function renderCoordinators(snap) {
+  facultySelect.innerHTML = `<option value="">Select Coordinator</option>`;
+  snap.forEach(doc => {
+    const d = doc.data();
+    let opt = document.createElement("option");
+    opt.value = doc.id;
+    opt.textContent = `${d.name} (${d.dept})`;
+    facultySelect.appendChild(opt);
+  });
+}
+
 async function submitAppointment() {
   const purpose = document.getElementById('purpose').value.trim();
   const facultyUid = facultySelect.value;
   const facultyName = facultySelect.options[facultySelect.selectedIndex]?.textContent;
   const date = document.getElementById('date').value;
   const time = document.getElementById('time').value;
+
+  if (!purpose || !facultyUid || !date || !time)
+    return alert("Fill all fields!");
 
   await db.collection('appointments').add({
     studentUid: auth.currentUser.uid,
@@ -201,10 +226,11 @@ async function submitAppointment() {
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  showSuccess("Appointment Sent");
+  showSuccess("Appointment Sent!");
 }
 
 function renderStudentAppointments(snap) {
+
   studentMsg.innerHTML = "";
 
   if (snap.empty) {
@@ -214,21 +240,18 @@ function renderStudentAppointments(snap) {
 
   snap.forEach(doc => {
     const r = doc.data();
-    const id = doc.id;
 
     studentMsg.innerHTML += `
       <div class="request-card">
         <div>
           <p><b>Coordinator:</b> ${r.facultyName}</p>
           <p><b>Purpose:</b> ${r.purpose}</p>
-          <p><b>Date:</b> ${r.date}</p>
-          <p><b>Time:</b> ${r.time}</p>
+          <p><b>Date:</b> ${r.date} <b>| Time:</b> ${r.time}</p>
           <p><b>Status:</b> ${r.status}</p>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:8px;">
           ${badgeHTML(r.status)}
-          <button class="btn small cancel" onclick="deleteAppointment('${id}')">Delete</button>
         </div>
       </div>
     `;
@@ -295,14 +318,14 @@ function renderCoordinatorRequestsFromCache() {
 
   dates.forEach(d => {
     requestList.innerHTML += `<h4 style="color:white;margin-top:10px">${d===today?(`Today (${d})`):d}</h4>`;
-  
-    groups[d].forEach(r=>{
+
+    groups[d].forEach(r => {
       requestList.innerHTML += `
         <div class="request-card">
           <div>
             <p><b>${r.studentName} (${r.studentId})</b></p>
             <p>${r.purpose}</p>
-            <p><b>Date:</b> ${r.date} <b>Time:</b> ${r.time}</p>
+            <p><b>Date:</b> ${r.date} <b>| Time:</b> ${r.time}</p>
             <p><b>Status:</b> ${r.status}</p>
           </div>
 
@@ -316,11 +339,10 @@ function renderCoordinatorRequestsFromCache() {
   });
 }
 
-/* SEARCH + FILTER */
 document.getElementById("searchInput")?.addEventListener("input", renderCoordinatorRequestsFromCache);
 document.getElementById("statusFilter")?.addEventListener("change", renderCoordinatorRequestsFromCache);
 
-/* ------------------ POPUPS ------------------ */
+/* ------------------ DETAILS POPUP ------------------ */
 async function openDetails(docId) {
   selectedRequestDocId = docId;
 
@@ -354,12 +376,13 @@ function openRejectPopup() {
   rejectPopup.style.display = "flex";
   detailsPopup.style.display = "none";
 }
+
 function closeRejectPopup() { rejectPopup.style.display = "none"; }
 
 async function submitSuggestion(){
   const d = document.getElementById('suggestDate').value;
   const t = document.getElementById('suggestTime').value;
-  
+
   await db.collection('appointments').doc(selectedRequestDocId).update({
     status: "Rejected",
     suggestedDate: d,
@@ -386,7 +409,7 @@ function showSuccess(txt){
 hideAllPages();
 showLogin();
 
-// Close overlay on click
+// close overlay
 document.querySelectorAll(".overlay").forEach(o=>{
   o.addEventListener("click", e=>{
     if(e.target===o) o.style.display="none";
