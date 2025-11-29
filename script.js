@@ -72,11 +72,11 @@ async function register(){
       profile.dept = (document.getElementById('stuDept').value || "").trim();
       profile.branch = (document.getElementById('stuBranch').value || "").trim();
       profile.year = (document.getElementById('stuYear').value || "").trim();
-      profile.userId = (document.getElementById('stuUserId').value || "").trim();
+      profile.userId = (document.getElementById('stuUSN').value || "").trim();
     } else {
       profile.name = (document.getElementById('coName').value || "").trim();
       profile.dept = (document.getElementById('coDept').value || "").trim();
-      profile.userId = (document.getElementById('coUserId').value || "").trim();
+      profile.userId = (document.getElementById('coUserId').value || "").trim()
     }
 
     await db.collection('users').doc(uid).set(profile);
@@ -480,3 +480,4 @@ showLogin();
 document.querySelectorAll('.overlay').forEach(o=>{
   o.addEventListener('click', (e)=>{ if(e.target===o){ o.style.display='none'; }});
 });
+
