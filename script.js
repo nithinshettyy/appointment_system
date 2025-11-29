@@ -1,22 +1,21 @@
 // ============================================================
-// script.js (FINAL UPDATED – Coordinator Sorting/Search FIXED +
-// Coordinator Dropdown FIXED + USN Working)
+// script.js (FINAL – Search + Filter Fully Working + commented)
 // ============================================================
 
-console.log("script.js loaded");
+console.log("script.js loaded"); // simple log to confirm script loaded
 
-// Firebase
-const auth = firebase.auth();
-const db = firebase.firestore();
+// Firebase compat references
+const auth = firebase.auth();             // firebase auth instance (compat)
+const db = firebase.firestore();          // firebase firestore instance (compat)
 
-// Global State
-let currentUserProfile = null;
-let selectedRequestDocId = null;
+// State
+let currentUserProfile = null;            // will hold the logged-in user's profile document
+let selectedRequestDocId = null;          // currently selected appointment doc id (for details/actions)
 
-// Cache for Coordinator Filter/Sorting
-let coordinatorCache = [];
+// Search + Filter cache
+let coordinatorCache = [];                // cache of coordinator's assigned appointments for filtering/searching
 
-// DOM references
+// DOM References
 const registerPage = document.getElementById('registerPage');
 const loginPage = document.getElementById('loginPage');
 const studentDashboard = document.getElementById('studentDashboard');
@@ -25,6 +24,7 @@ const studentMsg = document.getElementById('studentMsg');
 const requestList = document.getElementById('requestList');
 const facultySelect = document.getElementById('faculty');
 
+// Popups & UI pieces
 const successPopup = document.getElementById('successPopup');
 const successLottie = document.getElementById('successLottie');
 const successText = document.getElementById('successText');
@@ -32,7 +32,11 @@ const successText = document.getElementById('successText');
 const detailsPopup = document.getElementById('detailsPopup');
 const rejectPopup = document.getElementById('rejectPopup');
 
-// Student Details Popup
+// Search and Filter inputs (coordinator UI)
+const searchInput = document.getElementById("searchInput");
+const statusFilter = document.getElementById("statusFilter");
+
+// Details Popup Elements (for showing student info when coordinator opens a request)
 const d_name = document.getElementById('d_name');
 const d_usn = document.getElementById('d_usn');
 const d_email = document.getElementById('d_email');
@@ -41,176 +45,184 @@ const d_branch = document.getElementById('d_branch');
 const d_year = document.getElementById('d_year');
 const d_purpose = document.getElementById('d_purpose');
 const d_date_time = document.getElementById('d_date_time');
-
-// Hide all pages
-function hideAllPages() {
-  document.querySelectorAll(".page").forEach(p => p.style.display = "none");
-  document.querySelectorAll(".overlay").forEach(o => o.style.display = "none");
+// ---------- Page visibility helpers ----------
+// Simple helpers to show/hide the main pages and overlays.
+// The design uses a single-page-app style where only one "page" div shows at a time.
+function hideAllPages(){
+  document.querySelectorAll('.page').forEach(p=>p.style.display='none');
+  document.querySelectorAll('.overlay').forEach(o=>o.style.display='none');
 }
+function showRegister(){ hideAllPages(); registerPage.style.display='block'; }
+function showLogin(){ hideAllPages(); loginPage.style.display='block'; }
+function showStudentDashboard(){ hideAllPages(); studentDashboard.style.display='block'; }
+function showCoordinatorDashboard(){ hideAllPages(); coordinatorDashboard.style.display='block'; }
 
-function showRegister() { hideAllPages(); registerPage.style.display = 'block'; }
-function showLogin() { hideAllPages(); loginPage.style.display = 'block'; }
-function showStudentDashboard() { hideAllPages(); studentDashboard.style.display = 'block'; }
-function showCoordinatorDashboard() { hideAllPages(); coordinatorDashboard.style.display = 'block'; }
 
-/* ------------------ REGISTER ------------------ */
-function toggleRegisterForm() {
+// ----------- Register ----------
+// Toggle between student/coordinator fields in the registration form
+function toggleRegisterForm(){
   let role = document.getElementById('regRole').value;
-  document.getElementById('studentFields').style.display = role === "student" ? "block" : "none";
-  document.getElementById('coordFields').style.display = role === "coordinator" ? "block" : "none";
+  document.getElementById('studentFields').style.display = role==='student' ? 'block' : 'none';
+  document.getElementById('coordFields').style.display = role==='coordinator' ? 'block' : 'none';
 }
 
-async function register() {
-  try {
+// Register new user (uses Firebase Auth + Firestore to save profile)
+// Note: This function intentionally matches your original logic and field names.
+async function register(){
+  try{
     let role = document.getElementById('regRole').value;
-    let pass = document.getElementById('regPass').value.trim();
-    if (!pass) return alert("Enter a password");
+    let pass = (document.getElementById('regPass').value || "").trim();
+    if(!pass) return alert("Enter a password");
 
-    let email = role === "student"
-      ? document.getElementById('stuEmail').value.trim()
-      : document.getElementById('coEmail').value.trim();
+    let email = role==='student'
+      ? (document.getElementById('stuEmail').value || "").trim()
+      : (document.getElementById('coEmail').value || "").trim();
+
+    if(!email) return alert("Provide an email");
 
     const cred = await auth.createUserWithEmailAndPassword(email, pass);
     const uid = cred.user.uid;
 
     let profile = { role, email, uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
 
-    if (role === "student") {
+    if(role==='student'){
+      // collect student-specific fields
       profile.name = document.getElementById('stuName').value.trim();
       profile.dept = document.getElementById('stuDept').value.trim();
       profile.branch = document.getElementById('stuBranch').value.trim();
       profile.year = document.getElementById('stuYear').value.trim();
       profile.userId = document.getElementById('stuUSN').value.trim();
     } else {
+      // collect coordinator-specific fields
       profile.name = document.getElementById('coName').value.trim();
       profile.dept = document.getElementById('coDept').value.trim();
       profile.userId = document.getElementById('coUserId').value.trim();
     }
 
+    // save profile in 'users' collection using uid as document id
     await db.collection('users').doc(uid).set(profile);
-    alert("Registered Successfully!");
+    alert("Registered successfully!");
     showLogin();
 
-  } catch (err) {
+  }catch(err){
     alert("Registration error: " + err.message);
   }
 }
 
-/* ------------------ LOGIN ------------------ */
-async function login() {
-  try {
+
+// ----------- Login ----------
+async function login(){
+  try{
     const email = document.getElementById('loginEmail').value.trim();
     const pass = document.getElementById('loginPass').value.trim();
-    await auth.signInWithEmailAndPassword(email, pass);
-  } catch (err) {
-    alert("Login failed: " + err.message);
+    await auth.signInWithEmailAndPassword(email, pass); // firebase auth sign-in
+  }catch(err){
+    alert("Login failed: "+err.message);
   }
 }
 
-/* ------------------ LOGOUT ------------------ */
-function logout() {
-  auth.signOut();
+
+// ----------- Logout ----------
+function logout(){
+  auth.signOut();                     // firebase sign out
+  currentUserProfile = null;          // clear local state
+  selectedRequestDocId = null;
   hideAllPages();
   showLogin();
 }
 
-/* ------------------ AUTH STATE ------------------ */
+
+// ----------- Auth Routing (onAuthStateChanged) ----------
+// This reacts to auth state changes and sets up snapshot listeners
 let studentListenerUnsub = null;
 let coordinatorListenerUnsub = null;
-let coordinatorsDropdownUnsub = null;
+let coordinatorsListenerUnsub = null;
 
-auth.onAuthStateChanged(async (user) => {
+auth.onAuthStateChanged(async (user)=>{
 
-  if (studentListenerUnsub) studentListenerUnsub();
-  if (coordinatorListenerUnsub) coordinatorListenerUnsub();
-  if (coordinatorsDropdownUnsub) coordinatorsDropdownUnsub();
+  // remove previous realtime listeners (if any) to avoid leaks / duplicate handlers
+  if(studentListenerUnsub) studentListenerUnsub();
+  if(coordinatorListenerUnsub) coordinatorListenerUnsub();
+  if(coordinatorsListenerUnsub) coordinatorsListenerUnsub();
 
-  if (!user) {
+  if(!user){
+    // not logged in → show login page
     hideAllPages();
     showLogin();
     return;
   }
 
+  // fetch user's profile document from Firestore
   const doc = await db.collection('users').doc(user.uid).get();
-  if (!doc.exists) {
-    auth.signOut();
-    return alert("Profile missing — Please register again.");
-  }
+  if(!doc.exists) return alert("Profile missing.");
 
   currentUserProfile = doc.data();
 
-  /* ------------------ STUDENT USER ------------------ */
-  if (currentUserProfile.role === "student") {
+  // keep a live list of all coordinators (for student dropdown)
+  coordinatorsListenerUnsub = db.collection('users')
+    .where('role','==','coordinator')
+    .onSnapshot(snap => renderCoordinators(snap));
 
+  // route based on role in profile
+  if(currentUserProfile.role === "student"){
     showStudentDashboard();
     loadStudentDetails();
 
-    // ⭐ FIX: Load Coordinator Dropdown
-    coordinatorsDropdownUnsub = db.collection('users')
-      .where('role', '==', 'coordinator')
-      .onSnapshot(snap => renderCoordinators(snap));
-
+    // listen for this student's appointments
     studentListenerUnsub = db.collection('appointments')
-      .where('studentUid', '==', user.uid)
-      .orderBy('createdAt', 'desc')
+      .where('studentUid','==', user.uid)
+      .orderBy('createdAt','desc')
       .onSnapshot(snap => renderStudentAppointments(snap));
 
-  }
-
-  /* ------------------ COORDINATOR USER ------------------ */
-  else {
-
+  } else {
+    // coordinator: show coordinator dashboard and listen for appointments assigned to this coordinator
     showCoordinatorDashboard();
-    loadCoordinatorProfile();
 
     coordinatorListenerUnsub = db.collection('appointments')
-      .where('facultyUid', '==', user.uid)
-      .orderBy('date', 'asc')
-      .onSnapshot(snap => {
-
-        coordinatorCache = [];
-        snap.forEach(doc => {
-          let r = doc.data();
-          r.id = doc.id;
-          coordinatorCache.push(r);
-        });
-
-        renderCoordinatorRequestsFromCache();
-      });
+      .where('facultyUid','==', user.uid)
+      .orderBy('date','asc')
+      .onSnapshot(snap => renderCoordinatorRequests(snap));
   }
 });
+/* ---------- Student Helpers ---------- */
 
-/* ------------------ STUDENT FUNCTIONS ------------------ */
-function loadStudentDetails() {
+// populate student profile area and set min date for appointment date input
+function loadStudentDetails(){
   document.getElementById('s_name').innerText = "Name: " + currentUserProfile.name;
   document.getElementById('s_email').innerText = "Email: " + currentUserProfile.email;
   document.getElementById('s_dept').innerText = "Dept: " + currentUserProfile.dept;
   document.getElementById('s_branch').innerText = "Branch: " + currentUserProfile.branch;
   document.getElementById('s_year').innerText = "Year: " + currentUserProfile.year;
   document.getElementById('s_usn').innerText = "USN: " + currentUserProfile.userId;
+
+  // prevent selecting past dates
+  document.getElementById('date').setAttribute("min", new Date().toISOString().split("T")[0]);
 }
 
-function renderCoordinators(snap) {
-  facultySelect.innerHTML = `<option value="">Select Coordinator</option>`;
-  snap.forEach(doc => {
+// fill the student-facing coordinator dropdown (keeps updated by snapshot listener)
+function renderCoordinators(snap){
+  facultySelect.innerHTML = '<option value="">Select Coordinator</option>';
+  snap.forEach(doc=>{
     const d = doc.data();
-    let opt = document.createElement("option");
+    const opt = document.createElement('option');
     opt.value = doc.id;
     opt.textContent = `${d.name} (${d.dept})`;
     facultySelect.appendChild(opt);
   });
 }
 
-async function submitAppointment() {
+/* ---------- Submit Appointment ---------- */
+// called by student when submitting an appointment request
+async function submitAppointment(){
   const purpose = document.getElementById('purpose').value.trim();
   const facultyUid = facultySelect.value;
   const facultyName = facultySelect.options[facultySelect.selectedIndex]?.textContent;
   const date = document.getElementById('date').value;
   const time = document.getElementById('time').value;
 
-  if (!purpose || !facultyUid || !date || !time)
-    return alert("Fill all fields!");
+  if(!purpose || !facultyUid || !date || !time) return alert("Fill all fields");
 
+  // add appointment doc to 'appointments' collection
   await db.collection('appointments').add({
     studentUid: auth.currentUser.uid,
     studentId: currentUserProfile.userId,
@@ -221,137 +233,176 @@ async function submitAppointment() {
     date,
     time,
     status: "Pending",
-    suggestedDate: "",
-    suggestedTime: "",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
-  showSuccess("Appointment Sent!");
+  showSuccess("Appointment Sent");
 }
 
-function renderStudentAppointments(snap) {
-
+/* ---------- Student Apps List ---------- */
+// renders student's own appointment list
+function renderStudentAppointments(snap){
   studentMsg.innerHTML = "";
-
-  if (snap.empty) {
+  if(snap.empty){
     studentMsg.innerHTML = "<p>No appointments yet.</p>";
     return;
   }
 
-  snap.forEach(doc => {
+  snap.forEach(doc=>{
     const r = doc.data();
+    const id = doc.id;
+
+    // show withdraw button only when status is pending
+    const withdrawBtn = r.status === "Pending"
+      ? `<button class="btn small red" onclick="withdrawAppointment('${id}')">Withdraw</button>`
+      : "";
 
     studentMsg.innerHTML += `
       <div class="request-card">
         <div>
           <p><b>Coordinator:</b> ${r.facultyName}</p>
           <p><b>Purpose:</b> ${r.purpose}</p>
-          <p><b>Date:</b> ${r.date} <b>| Time:</b> ${r.time}</p>
+          <p><b>Date:</b> ${r.date} <b>Time:</b> ${r.time}</p>
           <p><b>Status:</b> ${r.status}</p>
         </div>
 
-        <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end;">
           ${badgeHTML(r.status)}
+          ${withdrawBtn}
+          <button class="btn small cancel" onclick="deleteAppointment('${id}')">Delete</button>
         </div>
       </div>
     `;
   });
 }
 
-/* ------------------ COORDINATOR FUNCTIONS ------------------ */
-function loadCoordinatorProfile() {
-  document.getElementById('c_name').innerText = "Name: " + currentUserProfile.name;
-  document.getElementById('c_email').innerText = "Email: " + currentUserProfile.email;
-  document.getElementById('c_dept').innerText = "Department: " + currentUserProfile.dept;
+/* ============================================================
+   COORDINATOR — SEARCH + FILTER (FINAL WORKING VERSION)
+   ============================================================ */
+
+/*
+  renderCoordinatorRequests(snap)
+  - fills coordinatorCache[] with appointment objects
+  - each object has r.id (doc id) and fields from Firestore
+  - then calls renderCoordinatorFiltered() to apply search + status filter
+*/
+function renderCoordinatorRequests(snap){
+
+  coordinatorCache = []; // reset cache
+  snap.forEach(doc=>{
+    let r = doc.data();
+    r.id = doc.id;
+    coordinatorCache.push(r);
+  });
+
+  renderCoordinatorFiltered(); // apply search/filter render
 }
 
-function renderCoordinatorRequestsFromCache() {
+/*
+  renderCoordinatorFiltered()
+  - uses coordinatorCache (already loaded from snapshot)
+  - applies searchInput text match and statusFilter selection
+  - groups results by date and renders them
+*/
+function renderCoordinatorFiltered() {
 
   requestList.innerHTML = "";
 
-  let pending = 0, approved = 0, rejected = 0, withdrawn = 0;
-
-  coordinatorCache.forEach(r => {
-    if (r.status === "Pending") pending++;
-    if (r.status === "Approved") approved++;
-    if (r.status === "Rejected") rejected++;
-    if (r.status === "Withdrawn") withdrawn++;
-  });
-
-  const set = (id, val) => { const e = document.getElementById(id); if(e) e.innerText = val; };
-  set("stat_pending", pending);
-  set("stat_approved", approved);
-  set("stat_rejected", rejected);
-  set("stat_withdrawn", withdrawn);
-
-  const search = (document.getElementById('searchInput')?.value || "").toLowerCase();
-  const filter = document.getElementById('statusFilter')?.value || "all";
+  let search = searchInput?.value.toLowerCase() || "";
+  let filter = statusFilter?.value || "all";
 
   const filtered = coordinatorCache.filter(r => {
-    const matchSearch =
+
+    let matchSearch =
       r.studentName?.toLowerCase().includes(search) ||
       r.studentId?.toLowerCase().includes(search);
 
-    const matchStatus = filter === "all" || r.status === filter;
+    let matchStatus =
+      filter === "all" || r.status === filter;
 
     return matchSearch && matchStatus;
   });
 
-  if (filtered.length === 0) {
-    requestList.innerHTML = `<p style="color:#ddd">No appointments found.</p>`;
+  // 1️⃣ If nothing found
+  if(filtered.length === 0){
+    requestList.innerHTML = `<p style="color:#ddd; padding:10px;">No appointments found.</p>`;
     return;
   }
 
-  const groups = {};
+  // 2️⃣ Sort by status priority FIRST
+  const priority = { "Pending": 1, "Rejected": 2, "Approved": 3 };
+  filtered.sort((a, b) => {
+    return (priority[a.status] || 99) - (priority[b.status] || 99);
+  });
+
+  // 3️⃣ Sort pending by oldest createdAt
+  filtered.sort((a, b) => {
+    if (a.status === "Pending" && b.status === "Pending") {
+      return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+    }
+    return 0;
+  });
+
+  // 4️⃣ Display each item (NO DATE GROUPING ANYMORE)
   filtered.forEach(r => {
-    const d = r.date || "No-Date";
-    if (!groups[d]) groups[d] = [];
-    groups[d].push(r);
-  });
 
-  const today = new Date().toISOString().split("T")[0];
-  const dates = Object.keys(groups).sort((a,b)=>{
-    if(a===today) return -1;
-    if(b===today) return 1;
-    return a.localeCompare(b);
-  });
-
-  dates.forEach(d => {
-    requestList.innerHTML += `<h4 style="color:white;margin-top:10px">${d===today?(`Today (${d})`):d}</h4>`;
-
-    groups[d].forEach(r => {
-      requestList.innerHTML += `
-        <div class="request-card">
-          <div>
-            <p><b>${r.studentName} (${r.studentId})</b></p>
-            <p>${r.purpose}</p>
-            <p><b>Date:</b> ${r.date} <b>| Time:</b> ${r.time}</p>
-            <p><b>Status:</b> ${r.status}</p>
-          </div>
-
-          <div style="display:flex;flex-direction:column;gap:8px;">
-            ${badgeHTML(r.status)}
-            <button class="btn small" onclick="openDetails('${r.id}')">View</button>
-          </div>
+    requestList.innerHTML += `
+      <div class="request-card">
+        <div>
+          <p><b>${r.studentName} (${r.studentId})</b></p>
+          <p>${r.purpose}</p>
+          <p><b>Date:</b> ${r.date || "—"}  <b>Time:</b> ${r.time || "—"}</p>
+          <p><b>Status:</b> ${r.status}</p>
         </div>
-      `;
-    });
+
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          ${badgeHTML(r.status)}
+          <button class="btn small" onclick="openDetails('${r.id}')">View</button>
+        </div>
+      </div>
+    `;
   });
+
 }
 
-document.getElementById("searchInput")?.addEventListener("input", renderCoordinatorRequestsFromCache);
-document.getElementById("statusFilter")?.addEventListener("change", renderCoordinatorRequestsFromCache);
+/* ---------- Badge ---------- */
+// small helper returning HTML badge for status (keeps UI consistent)
+function badgeHTML(status){
+  const s = (status || "Pending").toLowerCase();
+  if(s==="approved") return `<span class="badge approved">Approved</span>`;
+  if(s==="rejected") return `<span class="badge rejected">Rejected</span>`;
+  if(s==="withdrawn") return `<span class="badge withdrawn">Withdrawn</span>`;
+  return `<span class="badge pending">Pending</span>`;
+}
 
-/* ------------------ DETAILS POPUP ------------------ */
-async function openDetails(docId) {
+/* ---------- DELETE / WITHDRAW ---------- */
+// delete a Firestore appointment document
+async function deleteAppointment(docId){
+  await db.collection('appointments').doc(docId).delete();
+  showSuccess("Deleted");
+}
+
+// mark appointment as withdrawn
+async function withdrawAppointment(docId){
+  await db.collection('appointments').doc(docId).update({
+    status: "Withdrawn"
+  });
+  showSuccess("Withdrawn");
+}
+
+/* ---------- DETAILS POPUP ---------- */
+// opens details popup for a specific appointment docId
+async function openDetails(docId){
   selectedRequestDocId = docId;
 
   const snap = await db.collection('appointments').doc(docId).get();
   const req = snap.data();
 
+  // also fetch student profile to display full details
   const stuSnap = await db.collection('users').doc(req.studentUid).get();
   const stu = stuSnap.data();
 
+  // populate popup fields
   d_name.innerText = "Name: " + stu.name;
   d_usn.innerText = "USN: " + stu.userId;
   d_email.innerText = "Email: " + stu.email;
@@ -361,23 +412,33 @@ async function openDetails(docId) {
   d_purpose.innerText = "Purpose: " + req.purpose;
   d_date_time.innerText = "Date & Time: " + req.date + " — " + req.time;
 
-  detailsPopup.style.display = "flex";
+  // show the overlay
+  detailsPopup.style.display = 'flex';
 }
 
-function closeDetailsPopup() { detailsPopup.style.display = "none"; }
+function closeDetailsPopup(){
+  detailsPopup.style.display='none';
+}
 
-async function approveRequest() {
-  await db.collection('appointments').doc(selectedRequestDocId).update({ status: "Approved" });
+/* ---------- Approve ---------- */
+async function approveRequest(){
+  await db.collection('appointments').doc(selectedRequestDocId).update({
+    status: "Approved"
+  });
   closeDetailsPopup();
   showSuccess("Approved");
 }
 
-function openRejectPopup() {
-  rejectPopup.style.display = "flex";
-  detailsPopup.style.display = "none";
+/* ---------- Reject ---------- */
+function openRejectPopup(){
+  // show suggestion popup; hide details to avoid stacking
+  rejectPopup.style.display='flex';
+  detailsPopup.style.display='none';
 }
 
-function closeRejectPopup() { rejectPopup.style.display = "none"; }
+function closeRejectPopup(){
+  rejectPopup.style.display='none';
+}
 
 async function submitSuggestion(){
   const d = document.getElementById('suggestDate').value;
@@ -390,37 +451,50 @@ async function submitSuggestion(){
   });
 
   closeRejectPopup();
-  showSuccess("Rejected");
+  showSuccess("Suggestion Sent");
 }
 
-/* ------------------ SUCCESS POPUP ------------------ */
+/* ---------- Success Popup ---------- */
 function showSuccess(txt){
   successText.innerText = txt;
-  successPopup.style.display = "flex";
+  successPopup.style.display='flex';
   successLottie.play();
 
+  // auto-hide after 1s to keep UX snappy
   setTimeout(()=>{
-    successPopup.style.display = "none";
     successLottie.stop();
+    successPopup.style.display='none';
   },1000);
 }
 
-/* ------------------ INIT ------------------ */
+/* ---------- INIT ---------- */
+// wire up search + filter inputs to re-render filtered list dynamically
+searchInput?.addEventListener("input", renderCoordinatorFiltered);
+statusFilter?.addEventListener("change", renderCoordinatorFiltered);
+
+// start app on login page by default
 hideAllPages();
 showLogin();
 
-// close overlay
-document.querySelectorAll(".overlay").forEach(o=>{
-  o.addEventListener("click", e=>{
-    if(e.target===o) o.style.display="none";
+// allow clicking overlay background to close popups
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click', (e)=>{
+    if(e.target===o) o.style.display='none';
+  });
+});
+/* click overlay to close */
+document.querySelectorAll('.overlay').forEach(o=>{
+  o.addEventListener('click', (e)=>{
+    if(e.target===o){ 
+      o.style.display='none'; 
+    }
   });
 });
 
-/* ------------------ BADGE ------------------ */
-function badgeHTML(status){
-  const s = status.toLowerCase();
-  if(s==="approved") return `<span class="badge approved">Approved</span>`;
-  if(s==="rejected") return `<span class="badge rejected">Rejected</span>`;
-  if(s==="withdrawn") return `<span class="badge withdrawn">Withdrawn</span>`;
-  return `<span class="badge pending">Pending</span>`;
+function openCredits() {
+  document.getElementById("creditPopup").style.display = "flex";
+}
+
+function closeCredits() {
+  document.getElementById("creditPopup").style.display = "none";
 }
