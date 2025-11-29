@@ -28,8 +28,6 @@
       measurementId: "G-K3NJQ1CG57"
     };
     firebase.initializeApp(firebaseConfig);
-
-    /* Analytics may fail on local machines, so wrapped in try-catch */
     try { firebase.analytics(); } catch(e){}
   </script>
 
@@ -42,28 +40,23 @@
 
 <body>
 
-  <!-- Fixed app logo displayed on screen -->
+  <!-- Fixed app logo displayed on screen; clicking opens credits -->
   <div class="footer-logo">
     <img src="logo.jpeg" alt="App Logo" onclick="openCredits()" style="cursor:pointer;">
-</div>
-
+  </div>
 
   <!-- ========================= -->
   <!--      REGISTER PAGE       -->
   <!-- ========================= -->
-
-  <!-- Contains registration form for both students & coordinators -->
   <div class="page" id="registerPage">
     <div class="center-card glass-card">
       <h2 class="card-title">Create Account</h2>
 
-      <!-- Dropdown to choose type of user -->
       <select id="regRole" onchange="toggleRegisterForm()">
         <option value="student">Student</option>
         <option value="coordinator">Coordinator</option>
       </select>
 
-      <!-- Student registration fields -->
       <div id="studentFields" class="fields">
         <input id="stuName" type="text" placeholder="Student Name">
         <input id="stuEmail" type="email" placeholder="College Email">
@@ -73,7 +66,6 @@
         <input id="stuUSN" type="text" placeholder="USN No.">
       </div>
 
-      <!-- Coordinator registration fields (hidden initially) -->
       <div id="coordFields" class="fields" style="display:none;">
         <input id="coName" type="text" placeholder="Coordinator Name">
         <input id="coEmail" type="email" placeholder="Coordinator Email">
@@ -81,13 +73,10 @@
         <input id="coUserId" type="text" placeholder="Coordinator ID">
       </div>
 
-      <!-- Password for login -->
       <input id="regPass" type="password" placeholder="Password">
 
-      <!-- Register button -->
       <button class="btn primary full-btn" onclick="register()">Register</button>
 
-      <!-- Link to switch to login page -->
       <p class="switch">
         Already have an account?
         <b onclick="showLogin()" style="cursor:pointer">Login</b>
@@ -96,10 +85,8 @@
   </div>
 
   <!-- ========================= -->
-  <!--        LOGIN PAGE         -->
+  <!--        LOGIN PAGE        -->
   <!-- ========================= -->
-
-  <!-- User login form -->
   <div class="page" id="loginPage" style="display:none;">
     <div class="center-card glass-card">
       <h2 class="card-title">Login</h2>
@@ -119,10 +106,8 @@
   <!-- ========================= -->
   <!--     STUDENT DASHBOARD     -->
   <!-- ========================= -->
-
   <div class="page dashboard glass-card" id="studentDashboard" style="display:none;">
 
-    <!-- Header with logout button -->
     <div class="dash-header">
       <h2>Student Dashboard</h2>
       <button class="btn small" onclick="logout()">Logout</button>
@@ -130,7 +115,6 @@
 
     <div class="dash-body">
 
-      <!-- Student profile sidebar -->
       <aside class="sidebar glass-card">
         <h2>Your Profile</h2>
         <p id="s_name"></p>
@@ -142,8 +126,6 @@
       </aside>
 
       <main class="content">
-
-        <!-- Appointment booking form -->
         <section class="glass-card">
           <h3>Book Appointment</h3>
           <input id="purpose" type="text" placeholder="Purpose">
@@ -153,12 +135,10 @@
           <button class="btn primary full-btn" onclick="submitAppointment()">Submit</button>
         </section>
 
-        <!-- Student appointment status list -->
         <section class="glass-card">
           <h3>Your Appointment Status</h3>
           <div id="studentMsg" class="scroll-box"></div>
         </section>
-
       </main>
     </div>
   </div>
@@ -166,7 +146,6 @@
   <!-- ========================= -->
   <!--   COORDINATOR DASHBOARD   -->
   <!-- ========================= -->
-
   <div class="page dashboard glass-card" id="coordinatorDashboard" style="display:none;">
 
     <div class="dash-header">
@@ -174,7 +153,6 @@
       <button class="btn small" onclick="logout()">Logout</button>
     </div>
 
-    <!-- Coordinator profile -->
     <div class="glass-card co-profile-box">
       <h3>Your Profile</h3>
       <p id="c_name"></p>
@@ -182,14 +160,12 @@
       <p id="c_dept"></p>
     </div>
 
-    <!-- Appointment statistics boxes -->
     <div class="stats-container">
       <div class="stat-box pending">Pending: <span id="stat_pending">0</span></div>
       <div class="stat-box approved">Approved: <span id="stat_approved">0</span></div>
       <div class="stat-box rejected">Rejected: <span id="stat_rejected">0</span></div>
-      </div>
+    </div>
 
-    <!-- Search and filter for appointments -->
     <div class="search-filter">
       <input id="searchInput" type="text" placeholder="Search by name or USN">
       <select id="statusFilter">
@@ -200,7 +176,6 @@
       </select>
     </div>
 
-    <!-- Coordinator appointment list -->
     <main class="content">
       <section class="glass-card">
         <h3>Appointments Assigned To You</h3>
@@ -212,13 +187,9 @@
   <!-- ========================= -->
   <!--      DETAILS POPUP        -->
   <!-- ========================= -->
-
-  <!-- View student details inside a popup -->
   <div id="detailsPopup" class="overlay">
     <div class="popup-box glass-card">
       <h2>Student Details</h2>
-
-      <!-- Student data fields (filled dynamically by JS) -->
       <p id="d_name"></p>
       <p id="d_usn"></p>
       <p id="d_email"></p>
@@ -228,7 +199,6 @@
       <p id="d_purpose"></p>
       <p id="d_date_time"></p>
 
-      <!-- Approve / Reject controls -->
       <div class="popup-buttons">
         <button class="btn primary" onclick="approveRequest()">Approve</button>
         <button class="btn red" onclick="openRejectPopup()">Reject</button>
@@ -240,15 +210,11 @@
   <!-- ========================= -->
   <!--       REJECT POPUP        -->
   <!-- ========================= -->
-
-  <!-- Coordinator suggests new date/time -->
   <div id="rejectPopup" class="overlay">
     <div class="popup-box glass-card">
       <h2>Suggest New Date & Time</h2>
-
       <input id="suggestDate" type="date">
       <input id="suggestTime" type="time">
-
       <div class="popup-buttons">
         <button class="btn primary" onclick="submitSuggestion()">Submit</button>
         <button class="btn cancel" onclick="closeRejectPopup()">Cancel</button>
@@ -259,34 +225,27 @@
   <!-- ========================= -->
   <!--      SUCCESS POPUP        -->
   <!-- ========================= -->
-
-  <!-- Animation shown after any success action -->
   <div id="successPopup" class="overlay">
     <div class="popup-box glass-card" style="text-align:center;">
-
-      <!-- Lottie animation -->
       <lottie-player id="successLottie"
         src="https://assets4.lottiefiles.com/packages/lf20_qp1q7mct.json"
         background="transparent" speed="1"
         style="width:140px;height:140px" loop>
       </lottie-player>
-
       <h3 id="successText">Success</h3>
     </div>
   </div>
-<!-- CREDIT POPUP -->
-<div id="creditPopup" class="overlay">
-  <div class="popup-box glass-card" style="text-align:center;">
-    <h2 style="color:rgb(49, 47, 36);">Developed By</h2>
 
-    <p style="color:white;font-size:18px;">K Shanmai</p>
-    <p style="color:white;font-size:18px;">Nithin S Shetty</p>
-    <p style="color:white;font-size:18px;">Nitya M Angadi</p>
-
-    <button class="btn cancel" onclick="closeCredits()">Close</button>
+  <!-- CREDIT POPUP -->
+  <div id="creditPopup" class="overlay">
+    <div class="popup-box glass-card" style="text-align:center;">
+      <h2 style="color:rgb(49, 47, 36);">Developed By</h2>
+      <p style="color:white;font-size:18px;">K Shanmai</p>
+      <p style="color:white;font-size:18px;">Nithin S Shetty</p>
+      <p style="color:white;font-size:18px;">Nitya M Angadi</p>
+      <button class="btn cancel" onclick="closeCredits()">Close</button>
+    </div>
   </div>
-</div>
 
 </body>
 </html>
-
