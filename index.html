@@ -33,8 +33,12 @@
   <link rel="stylesheet" href="style.css" />
   <script src="script.js" defer></script>
 </head>
+<body><!-- LOGO AT BOTTOM CENTER -->
+  <div class="footer-logo">
+      <img src="logo.jpeg" alt="App Logo">
+  </div>
 
-<body>
+
 
   <!-- REGISTER PAGE -->
   <div class="page" id="registerPage">
@@ -96,7 +100,7 @@
 
     <div class="dash-body">
       <aside class="sidebar glass-card">
-        <h3>Your Profile</h3>
+        <h2>Your Profile</h2>
         <p id="s_name"></p>
         <p id="s_email"></p>
         <p id="s_dept"></p>
@@ -126,19 +130,50 @@
   </div>
 
   <!-- COORDINATOR DASHBOARD -->
-  <div class="page dashboard glass-card" id="coordinatorDashboard" style="display:none;">
-    <div class="dash-header">
-      <h2>Coordinator Dashboard</h2>
-      <button class="btn small" onclick="logout()">Logout</button>
-    </div>
+  <!-- COORDINATOR DASHBOARD -->
+<div class="page dashboard glass-card" id="coordinatorDashboard" style="display:none;">
 
-    <main class="content">
-      <section class="glass-card">
-        <h3>Appointments Assigned To You</h3>
-        <div id="requestList" class="scroll-box"></div>
-      </section>
-    </main>
+  <div class="dash-header">
+    <h2>Coordinator Dashboard</h2>
+    <button class="btn small" onclick="logout()">Logout</button>
   </div>
+
+  <!-- PROFILE BOX -->
+  <div class="glass-card co-profile-box">
+    <h3>Your Profile</h3>
+    <p id="c_name"></p>
+    <p id="c_email"></p>
+    <p id="c_dept"></p>
+  </div>
+
+  <!-- STATS BOXES -->
+  <div class="stats-container">
+    <div class="stat-box pending">Pending: <span id="stat_pending">0</span></div>
+    <div class="stat-box approved">Approved: <span id="stat_approved">0</span></div>
+    <div class="stat-box rejected">Rejected: <span id="stat_rejected">0</span></div>
+    <div class="stat-box withdrawn">Withdrawn: <span id="stat_withdrawn">0</span></div>
+  </div>
+
+  <!-- SEARCH + FILTER -->
+  <div class="search-filter">
+    <input id="searchInput" type="text" placeholder="Search by name or USN">
+    <select id="statusFilter">
+      <option value="all">All</option>
+      <option value="Pending">Pending</option>
+      <option value="Approved">Approved</option>
+      <option value="Rejected">Rejected</option>
+      <option value="Withdrawn">Withdrawn</option>
+    </select>
+  </div>
+
+  <main class="content">
+    <section class="glass-card">
+      <h3>Appointments Assigned To You</h3>
+      <div id="requestList" class="scroll-box"></div>
+    </section>
+  </main>
+</div>
+
 
   <!-- DETAILS POPUP -->
   <div id="detailsPopup" class="overlay">
@@ -188,5 +223,4 @@
 
 </body>
 </html>
-
 
