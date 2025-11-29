@@ -45,9 +45,8 @@ const d_branch = document.getElementById('d_branch');
 const d_year = document.getElementById('d_year');
 const d_purpose = document.getElementById('d_purpose');
 const d_date_time = document.getElementById('d_date_time');
+
 // ---------- Page visibility helpers ----------
-// Simple helpers to show/hide the main pages and overlays.
-// The design uses a single-page-app style where only one "page" div shows at a time.
 function hideAllPages(){
   document.querySelectorAll('.page').forEach(p=>p.style.display='none');
   document.querySelectorAll('.overlay').forEach(o=>o.style.display='none');
@@ -57,17 +56,13 @@ function showLogin(){ hideAllPages(); loginPage.style.display='block'; }
 function showStudentDashboard(){ hideAllPages(); studentDashboard.style.display='block'; }
 function showCoordinatorDashboard(){ hideAllPages(); coordinatorDashboard.style.display='block'; }
 
-
 // ----------- Register ----------
-// Toggle between student/coordinator fields in the registration form
 function toggleRegisterForm(){
   let role = document.getElementById('regRole').value;
   document.getElementById('studentFields').style.display = role==='student' ? 'block' : 'none';
   document.getElementById('coordFields').style.display = role==='coordinator' ? 'block' : 'none';
 }
 
-// Register new user (uses Firebase Auth + Firestore to save profile)
-// Note: This function intentionally matches your original logic and field names.
 async function register(){
   try{
     let role = document.getElementById('regRole').value;
@@ -86,20 +81,17 @@ async function register(){
     let profile = { role, email, uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() };
 
     if(role==='student'){
-      // collect student-specific fields
       profile.name = document.getElementById('stuName').value.trim();
       profile.dept = document.getElementById('stuDept').value.trim();
       profile.branch = document.getElementById('stuBranch').value.trim();
       profile.year = document.getElementById('stuYear').value.trim();
       profile.userId = document.getElementById('stuUSN').value.trim();
     } else {
-      // collect coordinator-specific fields
       profile.name = document.getElementById('coName').value.trim();
       profile.dept = document.getElementById('coDept').value.trim();
       profile.userId = document.getElementById('coUserId').value.trim();
     }
 
-    // save profile in 'users' collection using uid as document id
     await db.collection('users').doc(uid).set(profile);
     alert("Registered successfully!");
     showLogin();
@@ -109,97 +101,91 @@ async function register(){
   }
 }
 
-
 // ----------- Login ----------
 async function login(){
   try{
     const email = document.getElementById('loginEmail').value.trim();
     const pass = document.getElementById('loginPass').value.trim();
-    await auth.signInWithEmailAndPassword(email, pass); // firebase auth sign-in
+    await auth.signInWithEmailAndPassword(email, pass);
   }catch(err){
     alert("Login failed: "+err.message);
   }
 }
 
-
 // ----------- Logout ----------
 function logout(){
-  auth.signOut();                     // firebase sign out
-  currentUserProfile = null;          // clear local state
+  auth.signOut();
+  currentUserProfile = null;
   selectedRequestDocId = null;
   hideAllPages();
   showLogin();
 }
 
-
 // ----------- Auth Routing (onAuthStateChanged) ----------
-// This reacts to auth state changes and sets up snapshot listeners
 let studentListenerUnsub = null;
 let coordinatorListenerUnsub = null;
 let coordinatorsListenerUnsub = null;
 
 auth.onAuthStateChanged(async (user)=>{
 
-  // remove previous realtime listeners (if any) to avoid leaks / duplicate handlers
   if(studentListenerUnsub) studentListenerUnsub();
   if(coordinatorListenerUnsub) coordinatorListenerUnsub();
   if(coordinatorsListenerUnsub) coordinatorsListenerUnsub();
 
   if(!user){
-    // not logged in → show login page
     hideAllPages();
     showLogin();
     return;
   }
 
-  // fetch user's profile document from Firestore
   const doc = await db.collection('users').doc(user.uid).get();
-  if(!doc.exists) return alert("Profile missing.");
+  if(!doc.exists) {
+    await auth.signOut();
+    return alert("Profile missing. Please register.");
+  }
 
   currentUserProfile = doc.data();
 
-  // keep a live list of all coordinators (for student dropdown)
+  // load coordinators for student dropdown
   coordinatorsListenerUnsub = db.collection('users')
     .where('role','==','coordinator')
     .onSnapshot(snap => renderCoordinators(snap));
 
-  // route based on role in profile
   if(currentUserProfile.role === "student"){
     showStudentDashboard();
     loadStudentDetails();
 
-    // listen for this student's appointments
     studentListenerUnsub = db.collection('appointments')
       .where('studentUid','==', user.uid)
       .orderBy('createdAt','desc')
       .onSnapshot(snap => renderStudentAppointments(snap));
 
   } else {
-    // coordinator: show coordinator dashboard and listen for appointments assigned to this coordinator
+    // coordinator page
     showCoordinatorDashboard();
+
+    // populate coordinator profile fields (fix for missing profile shown earlier)
+    document.getElementById('c_name').innerText = "Name: " + (currentUserProfile.name || "");
+    document.getElementById('c_email').innerText = "Email: " + (currentUserProfile.email || "");
+    document.getElementById('c_dept').innerText = "Dept: " + (currentUserProfile.dept || "");
 
     coordinatorListenerUnsub = db.collection('appointments')
       .where('facultyUid','==', user.uid)
-      .orderBy('date','asc')
       .onSnapshot(snap => renderCoordinatorRequests(snap));
   }
 });
+
 /* ---------- Student Helpers ---------- */
-
-// populate student profile area and set min date for appointment date input
 function loadStudentDetails(){
-  document.getElementById('s_name').innerText = "Name: " + currentUserProfile.name;
-  document.getElementById('s_email').innerText = "Email: " + currentUserProfile.email;
-  document.getElementById('s_dept').innerText = "Dept: " + currentUserProfile.dept;
-  document.getElementById('s_branch').innerText = "Branch: " + currentUserProfile.branch;
-  document.getElementById('s_year').innerText = "Year: " + currentUserProfile.year;
-  document.getElementById('s_usn').innerText = "USN: " + currentUserProfile.userId;
-
-  // prevent selecting past dates
+  document.getElementById('s_name').innerText = "Name: " + (currentUserProfile.name || "");
+  document.getElementById('s_email').innerText = "Email: " + (currentUserProfile.email || "");
+  document.getElementById('s_dept').innerText = "Dept: " + (currentUserProfile.dept || "");
+  document.getElementById('s_branch').innerText = "Branch: " + (currentUserProfile.branch || "");
+  document.getElementById('s_year').innerText = "Year: " + (currentUserProfile.year || "");
+  document.getElementById('s_usn').innerText = "USN: " + (currentUserProfile.userId || "");
   document.getElementById('date').setAttribute("min", new Date().toISOString().split("T")[0]);
 }
 
-// fill the student-facing coordinator dropdown (keeps updated by snapshot listener)
 function renderCoordinators(snap){
   facultySelect.innerHTML = '<option value="">Select Coordinator</option>';
   snap.forEach(doc=>{
@@ -212,7 +198,6 @@ function renderCoordinators(snap){
 }
 
 /* ---------- Submit Appointment ---------- */
-// called by student when submitting an appointment request
 async function submitAppointment(){
   const purpose = document.getElementById('purpose').value.trim();
   const facultyUid = facultySelect.value;
@@ -222,7 +207,6 @@ async function submitAppointment(){
 
   if(!purpose || !facultyUid || !date || !time) return alert("Fill all fields");
 
-  // add appointment doc to 'appointments' collection
   await db.collection('appointments').add({
     studentUid: auth.currentUser.uid,
     studentId: currentUserProfile.userId,
@@ -233,6 +217,8 @@ async function submitAppointment(){
     date,
     time,
     status: "Pending",
+    suggestedDate: "",
+    suggestedTime: "",
     createdAt: firebase.firestore.FieldValue.serverTimestamp()
   });
 
@@ -240,7 +226,6 @@ async function submitAppointment(){
 }
 
 /* ---------- Student Apps List ---------- */
-// renders student's own appointment list
 function renderStudentAppointments(snap){
   studentMsg.innerHTML = "";
   if(snap.empty){
@@ -252,7 +237,6 @@ function renderStudentAppointments(snap){
     const r = doc.data();
     const id = doc.id;
 
-    // show withdraw button only when status is pending
     const withdrawBtn = r.status === "Pending"
       ? `<button class="btn small red" onclick="withdrawAppointment('${id}')">Withdraw</button>`
       : "";
@@ -277,45 +261,43 @@ function renderStudentAppointments(snap){
 }
 
 /* ============================================================
-   COORDINATOR — SEARCH + FILTER (FINAL WORKING VERSION)
+   COORDINATOR — SEARCH + FILTER
    ============================================================ */
 
-/*
-  renderCoordinatorRequests(snap)
-  - fills coordinatorCache[] with appointment objects
-  - each object has r.id (doc id) and fields from Firestore
-  - then calls renderCoordinatorFiltered() to apply search + status filter
-*/
 function renderCoordinatorRequests(snap){
-
-  coordinatorCache = []; // reset cache
+  coordinatorCache = [];
   snap.forEach(doc=>{
     let r = doc.data();
     r.id = doc.id;
     coordinatorCache.push(r);
   });
 
-  renderCoordinatorFiltered(); // apply search/filter render
+  // update counts based on all assigned docs (withdrawn not counted)
+  let pending = 0, approved = 0, rejected = 0;
+  coordinatorCache.forEach(r=>{
+    if(r.status === "Pending") pending++;
+    if(r.status === "Approved") approved++;
+    if(r.status === "Rejected") rejected++;
+    // do not count Withdrawn
+  });
+
+  document.getElementById("stat_pending").innerText = pending;
+  document.getElementById("stat_approved").innerText = approved;
+  document.getElementById("stat_rejected").innerText = rejected;
+
+  renderCoordinatorFiltered();
 }
 
-/*
-  renderCoordinatorFiltered()
-  - uses coordinatorCache (already loaded from snapshot)
-  - applies searchInput text match and statusFilter selection
-  - groups results by date and renders them
-*/
 function renderCoordinatorFiltered() {
-
   requestList.innerHTML = "";
 
-  let search = searchInput?.value.toLowerCase() || "";
+  let search = (searchInput?.value || "").toLowerCase();
   let filter = statusFilter?.value || "all";
 
   const filtered = coordinatorCache.filter(r => {
-
     let matchSearch =
-      r.studentName?.toLowerCase().includes(search) ||
-      r.studentId?.toLowerCase().includes(search);
+      (r.studentName || "").toLowerCase().includes(search) ||
+      (r.studentId || "").toLowerCase().includes(search);
 
     let matchStatus =
       filter === "all" || r.status === filter;
@@ -323,36 +305,37 @@ function renderCoordinatorFiltered() {
     return matchSearch && matchStatus;
   });
 
-  // 1️⃣ If nothing found
   if(filtered.length === 0){
     requestList.innerHTML = `<p style="color:#ddd; padding:10px;">No appointments found.</p>`;
     return;
   }
 
-  // 2️⃣ Sort by status priority FIRST
+  // Priority: Pending (1) -> Rejected (2) -> Approved (3)
   const priority = { "Pending": 1, "Rejected": 2, "Approved": 3 };
-  filtered.sort((a, b) => {
-    return (priority[a.status] || 99) - (priority[b.status] || 99);
-  });
 
-  // 3️⃣ Sort pending by oldest createdAt
+  // sort: first by priority, then for pending items by createdAt (oldest first)
   filtered.sort((a, b) => {
-    if (a.status === "Pending" && b.status === "Pending") {
+    const pa = priority[a.status] || 99;
+    const pb = priority[b.status] || 99;
+    if(pa !== pb) return pa - pb;
+
+    // If both pending, sort by createdAt seconds ascending (oldest first)
+    if(pa === 1 && pb === 1){
       return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
     }
+
+    // otherwise keep current order
     return 0;
   });
 
-  // 4️⃣ Display each item (NO DATE GROUPING ANYMORE)
   filtered.forEach(r => {
-
     requestList.innerHTML += `
       <div class="request-card">
         <div>
-          <p><b>${r.studentName} (${r.studentId})</b></p>
-          <p>${r.purpose}</p>
+          <p><b>${r.studentName || r.studentId || "Student" } (${r.studentId || ""})</b></p>
+          <p>${r.purpose || ""}</p>
           <p><b>Date:</b> ${r.date || "—"}  <b>Time:</b> ${r.time || "—"}</p>
-          <p><b>Status:</b> ${r.status}</p>
+          <p><b>Status:</b> ${r.status || "Pending"}</p>
         </div>
 
         <div style="display:flex;flex-direction:column;gap:8px;">
@@ -362,11 +345,9 @@ function renderCoordinatorFiltered() {
       </div>
     `;
   });
-
 }
 
 /* ---------- Badge ---------- */
-// small helper returning HTML badge for status (keeps UI consistent)
 function badgeHTML(status){
   const s = (status || "Pending").toLowerCase();
   if(s==="approved") return `<span class="badge approved">Approved</span>`;
@@ -376,13 +357,11 @@ function badgeHTML(status){
 }
 
 /* ---------- DELETE / WITHDRAW ---------- */
-// delete a Firestore appointment document
 async function deleteAppointment(docId){
   await db.collection('appointments').doc(docId).delete();
   showSuccess("Deleted");
 }
 
-// mark appointment as withdrawn
 async function withdrawAppointment(docId){
   await db.collection('appointments').doc(docId).update({
     status: "Withdrawn"
@@ -391,28 +370,28 @@ async function withdrawAppointment(docId){
 }
 
 /* ---------- DETAILS POPUP ---------- */
-// opens details popup for a specific appointment docId
 async function openDetails(docId){
   selectedRequestDocId = docId;
 
   const snap = await db.collection('appointments').doc(docId).get();
+  if(!snap.exists) return alert("Request not found");
   const req = snap.data();
 
-  // also fetch student profile to display full details
-  const stuSnap = await db.collection('users').doc(req.studentUid).get();
-  const stu = stuSnap.data();
+  const stu = { };
+  if(req.studentUid){
+    const stuSnap = await db.collection('users').doc(req.studentUid).get();
+    if(stuSnap.exists) Object.assign(stu, stuSnap.data());
+  }
 
-  // populate popup fields
-  d_name.innerText = "Name: " + stu.name;
-  d_usn.innerText = "USN: " + stu.userId;
-  d_email.innerText = "Email: " + stu.email;
-  d_dept.innerText = "Dept: " + stu.dept;
-  d_branch.innerText = "Branch: " + stu.branch;
-  d_year.innerText = "Year: " + stu.year;
-  d_purpose.innerText = "Purpose: " + req.purpose;
-  d_date_time.innerText = "Date & Time: " + req.date + " — " + req.time;
+  d_name.innerText = "Name: " + (stu.name || req.studentName || "");
+  d_usn.innerText = "USN: " + (stu.userId || req.studentId || "");
+  d_email.innerText = "Email: " + (stu.email || "");
+  d_dept.innerText = "Dept: " + (stu.dept || "");
+  d_branch.innerText = "Branch: " + (stu.branch || "");
+  d_year.innerText = "Year: " + (stu.year || "");
+  d_purpose.innerText = "Purpose: " + (req.purpose || "");
+  d_date_time.innerText = "Date & Time: " + (req.date || "—") + " — " + (req.time || "—");
 
-  // show the overlay
   detailsPopup.style.display = 'flex';
 }
 
@@ -422,6 +401,7 @@ function closeDetailsPopup(){
 
 /* ---------- Approve ---------- */
 async function approveRequest(){
+  if(!selectedRequestDocId) return;
   await db.collection('appointments').doc(selectedRequestDocId).update({
     status: "Approved"
   });
@@ -431,9 +411,11 @@ async function approveRequest(){
 
 /* ---------- Reject ---------- */
 function openRejectPopup(){
-  // show suggestion popup; hide details to avoid stacking
-  rejectPopup.style.display='flex';
+  if(!selectedRequestDocId) return;
+  document.getElementById('suggestDate').value = "";
+  document.getElementById('suggestTime').value = "";
   detailsPopup.style.display='none';
+  rejectPopup.style.display='flex';
 }
 
 function closeRejectPopup(){
@@ -458,43 +440,29 @@ async function submitSuggestion(){
 function showSuccess(txt){
   successText.innerText = txt;
   successPopup.style.display='flex';
-  successLottie.play();
-
-  // auto-hide after 1s to keep UX snappy
+  try { successLottie.play(); } catch(e){}
   setTimeout(()=>{
-    successLottie.stop();
+    try { successLottie.stop(); } catch(e){}
     successPopup.style.display='none';
   },1000);
 }
 
 /* ---------- INIT ---------- */
-// wire up search + filter inputs to re-render filtered list dynamically
 searchInput?.addEventListener("input", renderCoordinatorFiltered);
 statusFilter?.addEventListener("change", renderCoordinatorFiltered);
 
-// start app on login page by default
 hideAllPages();
 showLogin();
 
-// allow clicking overlay background to close popups
 document.querySelectorAll('.overlay').forEach(o=>{
   o.addEventListener('click', (e)=>{
     if(e.target===o) o.style.display='none';
-  });
-});
-/* click overlay to close */
-document.querySelectorAll('.overlay').forEach(o=>{
-  o.addEventListener('click', (e)=>{
-    if(e.target===o){ 
-      o.style.display='none'; 
-    }
   });
 });
 
 function openCredits() {
   document.getElementById("creditPopup").style.display = "flex";
 }
-
 function closeCredits() {
   document.getElementById("creditPopup").style.display = "none";
 }
