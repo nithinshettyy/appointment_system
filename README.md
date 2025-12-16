@@ -48,15 +48,14 @@ All data is stored and managed using **Firebase**, eliminating the need for a se
 
 ## 🔐 Firebase Services Used
 - Firebase Firestore / Realtime Database
-- Firebase Hosting *(optional)*
-- Firebase Authentication *(optional)*
+- Firebase Hosting
+- Firebase Authentication 
 
 ---
 
 ## 🚀 Future Enhancements
 - Email or SMS appointment reminders
-- Role-based access (Admin / User)
-- Calendar integration
+- Forgot passwords
 - Analytics dashboard
 
 ---
